@@ -23,39 +23,53 @@ function ctrl_c(){
 	tput cnorm
 	exit 0
 }
-
+function banner(){
+    echo -e "\n${purpleColour}"
+    echo -e " _  /_ _  _  /____/__  _ _  ______  _   _/____._   _"
+    echo -e "/_ / //_'/_ /\   / /_'/ / //_/  /_|/ //_/    //_/_\ "
+    echo -e "                          /                  /     hecho por nothingbutlucas"
+    echo -e "${endColour}"
+}
 # Función para chequear la temperatura y hacer el print al user
-
 function check-temp(){
+    cpu=$(($(</sys/class/thermal/thermal_zone0/temp)/100))
 
-echo -e "\n${purpleColour}"
-echo -e " _  /_ _  _  /____/__  _ _  _ "
-echo -e "/_ / //_'/_ /\   / /_'/ / //_/"
-echo -e "                          /      hecho por nothingbutlucas"
-echo -e "${endColour}"
+    echo -e "\n${yellowColour}$(date) @ $(hostname)\n${endColour}"
+    for i in $(seq 1 20); do echo -ne "${purpleColour}-${endColour}"; done
+    echo -e "\n${greenColour}[+]${endColour} ${yellowColour}GPU -> $(vcgencmd measure_temp | egrep -o '[0-9]*\.[0-9]*') C°${endColour}"
+    echo -e "\n${greenColour}[+]${endColour} ${yellowColour}CPU -> ${cpu::2}.${cpu:2} Cº"
 
-cpu=$(($(</sys/class/thermal/thermal_zone0/temp)/100))
+    # Hay 3 tipos de estados
+    # Por debajo de los 60º (recomendado)
+    # Por arriba de los 60º y debajo de los 79º (medio jugado, mejor ponele un fan)
+    # Por arriba de los 79º (Acá ya puede empezar a fallar el funcionamiento de la raspberry)
 
-echo -e "\n${yellowColour}$(date) @ $(hostname)\n${endColour}"
-for i in $(seq 1 20); do echo -ne "${purpleColour}-${endColour}"; done
-echo -e "\n${greenColour}[+]${endColour} ${yellowColour}GPU -> $(vcgencmd measure_temp | egrep -o '[0-9]*\.[0-9]*') C°${endColour}"
-echo -e "\n${greenColour}[+]${endColour} ${yellowColour}CPU -> ${cpu::2}.${cpu:2} Cº"
+    if test $((cpu/10)) -lt 60; then
+    echo -e "\n${turquoiseColour}[+] Tamo re tranqui${endColour}"
+    elif test $((cpu/10)) -gt 60 && test $((cpu/10)) -lt 79; then
+    echo -e "\n${yellowColour}[-] La cosa se esta calentando...${endColour}"
+    else
+    echo -e "\n${redColour}[!!] Ta quenchi la cosa${endColour}"
+    fi
 
-# Hay 3 tipos de estados
-# Por debajo de los 60º (recomendado)
-# Por arriba de los 60º y debajo de los 79º (medio jugado, mejor ponele un fan)
-# Por arriba de los 79º (Acá ya puede empezar a fallar el funcionamiento de la raspberry)
+    for i in $(seq 1 20); do echo -ne "${purpleColour}-${endColour}"; done
+}
 
-if test $((cpu/10)) -lt 60; then
-echo -e "\n${turquoiseColour}[+] Tamo re tranqui${endColour}"
-elif test $((cpu/10)) -gt 60 && test $((cpu/10)) -lt 79; then
-echo -e "\n${yellowColour}[-] La cosa se esta calentando...${endColour}"
-else
-echo -e "\n${redColour}[!!] Ta quenchi la cosa${endColour}"
-fi
-
-for i in $(seq 1 20); do echo -ne "${purpleColour}-${endColour}"; done
-echo -e "\n"
+function scan_wifi(){
+    cp scan.txt previousscan.txt
+    sudo nmap -n -sn "10.10.10.*" > scan.txt
+    scan=$(<scan.txt)
+    format_scan_1=$(cat scan.txt | grep 10.10 -A 2 | grep -v -E "Host|scanned")
+    echo -e ${yellowColour} ${format_scan_1//"Nmap scan report for "/\\n[ ~ ]}${endColour}
+    message=$(diff previousscan.txt scan.txt | grep 10.10)
+    iostring="${message:0:1}"
+    computer="${message:23:11}"
+    if [ "$iostring" = \> ]; then
+        echo -e ${redColour}[ + ]$computer connected${endColour}
+    fi
+    if [ "$iostring" = \< ]; then
+        echo -e ${redColour}[ - ]$computer disconnected${endColour}
+    fi
 }
 
 # Main
@@ -64,14 +78,20 @@ echo -e "\n"
 
 if [ "$(id -u)" == "0" ]; then
 	tput civis
+    touch scan.txt
 	while true; do
-		check-temp
+        banner
+        check-temp
+        scan_wifi
 		sleep 1800
 	done
 
 else
 	while true; do
+    touch scan.txt
+    banner
     check-temp
+    scan_wifi
 	echo -e "\n${redColour}[!] Necesitas ejecutar la herramienta como root para poder ver la temperatura del GPU${endColour}"
 	sleep 1800
 	done
