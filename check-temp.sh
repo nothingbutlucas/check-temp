@@ -60,7 +60,7 @@ function scan_wifi(){
     sudo nmap -n -sn "10.10.10.*" > scan.txt
     scan=$(<scan.txt)
     format_scan_1=$(cat scan.txt | grep 10.10 -A 2 | grep -v -E "Host|scanned")
-    echo -e ${yellowColour} ${format_scan_1//"Nmap scan report for "/\\n[ ~ ]}${endColour}
+    echo -e ${yellowColour} ${format_scan_1//"Nmap scan report for "/\\n[ ~ ] }${endColour}
     message=$(diff previousscan.txt scan.txt | grep 10.10)
     iostring="${message:0:1}"
     computer="${message:23:11}"
