@@ -58,22 +58,23 @@ function banner(){
     echo -e "\n${purpleColour}"
     print-centered " _  /_ _  _  /____/__  _ _  ______  _   _/____._   _"
     print-centered "/_ / //_'/_ /\   / /_'/ / //_/  /_|/ //_/    //_/_\ "
-    print-centered "                          /                  /     hecho por nothingbutlucas"
+    print-centered "                          /                  /      "
+    print-centered "hecho por nothingbutlucas"
     echo -e "${endColour}"
 }
+
 # Función para chequear la temperatura y hacer el print al user
 function check-temp(){
     cpu=$(($(</sys/class/thermal/thermal_zone0/temp)/100))
 
     echo -e "\n${yellowColour}"
     print-centered "$(date +"%c") - $(whoami)@$(hostname)"
-    echo -e "\n${endColour}"
+    echo -e "${endColour}"
     for i in $(seq 1 $TERM_COLS); do echo -ne "${purpleColour}-${endColour}"; done
     
     echo -e "${yellowColour}"
     print-centered "GPU -> $(vcgencmd measure_temp | egrep -o '[0-9]*\.[0-9]*') C°"
     print-centered "CPU -> ${cpu::2}.${cpu:2} Cº"
-    echo -e "${endColour}"
     # Hay 3 tipos de estados
     # Por debajo de los 60º (recomendado)
     # Por arriba de los 60º y debajo de los 79º (medio jugado, mejor ponele un fan)
@@ -84,12 +85,12 @@ function check-temp(){
     print-centered "Tamo re tranqui"
     echo -e "${endColour}"
     elif test $((cpu/10)) -gt 60 && test $((cpu/10)) -lt 79; then
-        echo -e "\n${yellowColour}"
+        echo -e "${yellowColour}"
 
         print-centered "[-] La cosa se esta calentando..."
         echo -e "${endColour}"
     else
-        echo -e "\n${redColour}"
+        echo -e "${redColour}"
         print-centered "[!!] Ta quenchi la cosa"
         echo -e "${endColour}"
     fi
@@ -100,23 +101,40 @@ function check-temp(){
 function scan_wifi(){
     cp scan.txt previousscan.txt
     sudo nmap -n -sn "10.10.10.*" > scan.txt
-    scan=$(<scan.txt)
-    format_scan_1=$(cat scan.txt | grep 10.10 -A 2 | grep -v -E "Host|scanned")
+    scan="scan.txt"
     echo -e "${yellowColour}"
-    print-centered "${format_scan_1//'Nmap scan report for '/[ ~ ]}"
+    while read -r line;do
+        if [[ $line == *"Starting"* ]]; then
+            #do_nothing
+            line=""
+        elif [[ $line == *"Host"* ]]; then
+            #do_nothing
+            line=""
+        elif [[ $line == *"MAC"* ]];then
+            format_line=${line:13}
+            print-centered "$format_line"
+        elif [[ $line == *"Nmap scan"* ]];then
+            format_line=${line:21}
+            print-centered "$format_line"
+        elif [[ $line == *"Nmap"* ]];then
+            #do_nothing
+            line=""
+        else
+            format_line=$(echo -e $line)
+            print-centered "$format_line"
+        fi
+    done <$scan
     echo -e "${endColour}"
     message=$(diff previousscan.txt scan.txt | grep 10.10)
     iostring="${message:0:1}"
-    computer="${message:23:11}"
+    computer="${message:23}"
     if [ "$iostring" = \> ]; then
         echo -e ${redColour}
         print-centered "[ + ] $computer connected [ + ]"
-        echo -e ${endColour}
     fi
     if [ "$iostring" = \< ]; then
         echo -e ${redColour}
-        print-centered "[ - ]$computer disconnected [ + ]"
-        echo -e ${endColour}
+        print-centered "[ - ] $computer disconnected [ + ]"
     fi
     for i in $(seq 1 $TERM_COLS); do echo -ne "${purpleColour}-${endColour}"; done
 }
