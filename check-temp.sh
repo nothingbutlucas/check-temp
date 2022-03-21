@@ -100,7 +100,7 @@ function check-temp(){
 
 function scan_wifi(){
     cp scan.txt previousscan.txt
-    sudo nmap -n -sn "10.10.10.*" > scan.txt
+    sudo nmap -n -sn --max-parallelism 100 "10.10.10.0/24" > scan.txt
     scan="scan.txt"
     echo -e "${yellowColour}"
     while read -r line;do
