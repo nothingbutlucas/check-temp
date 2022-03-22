@@ -53,14 +53,12 @@ function print-centered {
      return 0
 }
 
-
 function banner(){
-    echo -e "\n${purpleColour}"
+    echo -e "${purpleColour}"
     print-centered " _  /_ _  _  /____/__  _ _  ______  _   _/____._   _"
     print-centered "/_ / //_'/_ /\   / /_'/ / //_/  /_|/ //_/    //_/_\ "
     print-centered "                          /                  /      "
     print-centered "hecho por nothingbutlucas"
-    echo -e "${endColour}"
 }
 
 # Función para chequear la temperatura y hacer el print al user
@@ -83,16 +81,13 @@ function check-temp(){
     if test $((cpu/10)) -lt 60; then
     echo -e "${turquoiseColour}"
     print-centered "Tamo re tranqui"
-    echo -e "${endColour}"
     elif test $((cpu/10)) -gt 60 && test $((cpu/10)) -lt 79; then
         echo -e "${yellowColour}"
 
         print-centered "[-] La cosa se esta calentando..."
-        echo -e "${endColour}"
     else
         echo -e "${redColour}"
         print-centered "[!!] Ta quenchi la cosa"
-        echo -e "${endColour}"
     fi
 
     for i in $(seq 1 $TERM_COLS); do echo -ne "${purpleColour}-${endColour}"; done
@@ -104,37 +99,43 @@ function scan_wifi(){
     scan="scan.txt"
     echo -e "${yellowColour}"
     while read -r line;do
-        if [[ $line == *"Starting"* ]]; then
-            #do_nothing
-            line=""
-        elif [[ $line == *"Host"* ]]; then
-            #do_nothing
-            line=""
-        elif [[ $line == *"MAC"* ]];then
-            format_line=${line:13}
-            print-centered "$format_line"
-        elif [[ $line == *"Nmap scan"* ]];then
+        if [[ $line == *"Nmap scan"* ]];then
             format_line=${line:21}
-            print-centered "$format_line"
-        elif [[ $line == *"Nmap"* ]];then
-            #do_nothing
-            line=""
-        else
-            format_line=$(echo -e $line)
-            print-centered "$format_line"
+            if [[ $format_line == *"10.10.10.1" ]];then
+                print-centered "$format_line - Router"
+            elif [[ $format_line == *"10.10.10.2" ]];then
+                print-centered "$format_line - Device 1"
+            elif [[ $format_line == *"10.10.10.3" ]];then
+                print-centered "$format_line - Device 2"
+            elif [[ $format_line == *"10.10.10.4" ]];then
+                print-centered "$format_line - Device 3"
+            elif [[ $format_line == *"10.10.10.5" ]];then
+                print-centered "$format_line - Device 4"
+            elif [[ $format_line == *"10.10.10.6" ]];then
+                print-centered "$format_line - Device 5"
+            elif [[ $format_line == *"10.10.10.7" ]];then
+                print-centered "$format_line - Device 6"
+            elif [[ $format_line == *"10.10.10.11" ]];then
+                print-centered "$format_line - Device 7"
+            else
+                print-centered "$format_line"
+            fi
         fi
     done <$scan
-    echo -e "${endColour}"
-    message=$(diff previousscan.txt scan.txt | grep 10.10)
-    iostring="${message:0:1}"
-    computer="${message:23}"
-    if [ "$iostring" = \> ]; then
-        echo -e ${redColour}
-        print-centered "[ + ] $computer connected [ + ]"
-    fi
-    if [ "$iostring" = \< ]; then
-        echo -e ${redColour}
-        print-centered "[ - ] $computer disconnected [ + ]"
+    diff previousscan.txt scan.txt | grep "10.10." > difference.txt
+    computers="difference.txt"
+    echo -e "${redColour}"
+    if [ -s $computers ];then
+        while read -r computer;do
+            iostring="${computer:0:1}"
+            if [ "$iostring" == \> ]; then
+                print-centered "[ + ] ${computer:23:11} connected [ + ]"
+            elif [ "$iostring" == \< ]; then
+                print-centered "[ - ] ${computer:23:11} disconnected [ - ]"
+            fi
+        done <$computers
+    else
+        print-centered "[ ~ ] No new devices [ ~ ]"
     fi
     for i in $(seq 1 $TERM_COLS); do echo -ne "${purpleColour}-${endColour}"; done
 }
@@ -145,8 +146,8 @@ function scan_wifi(){
 
 if [ "$(id -u)" == "0" ]; then
 	tput civis
-    touch scan.txt
     banner
+    touch scan.txt
 	while true; do
         check-temp
         scan_wifi
@@ -160,7 +161,9 @@ else
 	while true; do
     check-temp
     scan_wifi
-	echo -e "\n${redColour}[!] Necesitas ejecutar la herramienta como root para poder ver la temperatura del GPU${endColour}"
+    echo -e "\n${redColour}"
+    print-centered "[!] Necesitas ejecutar la herramienta como root para poder ver la temperatura del GPU"
+    echo -e "${endColour}"
 	sleep 1800
 	done
 fi
