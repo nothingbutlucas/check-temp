@@ -1,3 +1,6 @@
 scan.txt
 previousscan.txt
 difference.txt
+connected_devices.txt
+disconnected_devices.txt
+test.txt
