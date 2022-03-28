@@ -143,34 +143,28 @@ function scan_wifi(){
     done <$scan
     diff previousscan.txt scan.txt | grep "10.10." > difference.txt
     computers="difference.txt"
-    echo -e "${redColour}"
     if [ -s $computers ];then
         while IFS= read -r computer;do
             iostring="${computer:0:1}"
             if [ "$iostring" == \< ]; then
-                if [ ! -z $(grep "${computer:23:12}" "disconnected_devices.txt") ];then
-                    nothing="nothing"
-                else
-                    echo -e "${computer:23:12} - Miller - $(date +"%c")" >> disconnected_devices.txt
-                fi
+                echo -e "${computer:23:12} - $(date +"%c")" >> disconnected_devices.txt
             fi
         done <$computers
     fi
 }
 
 function print_lines(){
-    echo -e "${yellowColour}"
     disconnected_devices="disconnected_devices.txt"
     connected_devices="connected_devices.txt"
-    echo -e " Disconnected Devices"
+    echo -e " ${yellowColour}Disconnected Devices"
     while IFS= read -r line;do
-        if [ ! -z $(grep "${line:0:11}" "connected_devices.txt") ];then
+        if [ $(grep "${line:0:11} connected_devices.txt") ];then
             nothing="nothing"
         else
             echo -e " $line"
         fi
     done <$disconnected_devices
-    tput cup 14 $last_column
+    tput cup 13 $last_column
     echo -e "Connected Devices"
     row=15
     while IFS= read -r line;do
@@ -183,19 +177,16 @@ function print_lines(){
 
 # Main
 
-# Si el usuario es root se ejecuta la función anterior sin problema. Caso contrario, se ejecuta la función, pero se le hace un print diciendole que necesita ejecutar la herramienta como root
-
-if [ "$(id -u)" == "0" ]; then
-	tput civis
+function main(){
+    tput civis
     clear
     banner
-    #touch scan.txt
     check-temp
     scan_wifi
     print_lines
 	while true; do
         check-temp
-        if [ "$(date +"%M%S")" == "4510" ]; then
+        if [ "$(date +"%M%S")" == "3010" ]; then
             clear
             banner
             check-temp
@@ -203,17 +194,16 @@ if [ "$(id -u)" == "0" ]; then
             print_lines
         fi
 	done
+}
 
+# Si el usuario es root se ejecuta la función anterior sin problema. Caso contrario, se ejecuta la función, pero se le hace un print diciendole que necesita ejecutar la herramienta como root
+
+if [ "$(id -u)" == "0" ]; then
+    main
 else
-    tput civis
-    banner
-    touch scan.txt
-	while true; do
-    check-temp
-    scan_wifi
     echo -e "\n${redColour}"
     print-centered "[!] Necesitas ejecutar la herramienta como root para poder ver la temperatura del GPU"
     echo -e "${endColour}"
-	sleep 1800
-	done
+    sleep 5
+    main
 fi
