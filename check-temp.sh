@@ -85,14 +85,19 @@ function banner(){
     print-centered "hecho por nothingbutlucas"
 }
 
-# Función para chequear la temperatura y hacer el print al user
-function check-temp(){
+function hour(){
     tput cup 5 $last_column
-    cpu=$(($(</sys/class/thermal/thermal_zone0/temp)/100))
     echo -e "${yellowColour}$(date +"%c") - $(whoami)@$(hostname)${endColour}"
+}
+
+function print-line(){
     for i in $(seq 1 $TERM_COLS); do echo -ne "${purpleColour}-${endColour}"; done
+}
+
+function check-temp(){
+    cpu=$(($(</sys/class/thermal/thermal_zone0/temp)/100))
     tput cup 7 $last_column
-    echo -e "${yellowColour}  GPU -> $(vcgencmd measure_temp | egrep -o '[0-9]*\.[0-9]*') C°"
+    echo -e "${yellowColour}GPU -> $(vcgencmd measure_temp | egrep -o '[0-9]*\.[0-9]*') C°"
     tput cup 9 $last_column
     echo -e "CPU -> ${cpu::2}.${cpu:2} Cº"
     # Hay 3 tipos de estados
@@ -107,8 +112,6 @@ function check-temp(){
     else
         echo -e "${redColour}[ !! ] Ta quenchi la cosa"
     fi
-
-    for i in $(seq 1 $TERM_COLS); do echo -ne "${purpleColour}-${endColour}"; done
 }
 
 function scan_wifi(){
@@ -181,15 +184,21 @@ function main(){
     tput civis
     clear
     banner
+    hour
+    print-line
     check-temp
+    print-line
     scan_wifi
     print_lines
 	while true; do
-        check-temp
+        hour
         if [ "$(date +"%M%S")" == "3010" ]; then
             clear
             banner
+            hour
+            print-line
             check-temp
+            print-line
             scan_wifi
             print_lines
         fi
